@@ -20,7 +20,7 @@ import {
 } from "@/components/ui/select"
 import { MessageSquare, Send, Settings, Bot, User, Menu, PlusCircle, LogOut } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
-import { useWallet } from "@aptos-labs/wallet-adapter-react"
+import { InputTransactionData, useWallet } from "@aptos-labs/wallet-adapter-react"
 import "@aptos-labs/wallet-adapter-ant-design/dist/index.css";
 import { useAutoConnect } from "@/components/AutoConnectProvider";
 import { WalletSelector as ShadcnWalletSelector } from "@/components/WalletSelector";
@@ -30,14 +30,20 @@ const models = [
   { id: "qwen2:0.5b", name: "qwen2:0.5b" },
 ]
 
+const RPC_URL = 'https://testnet.movementnetwork.xyz/v1'
+const BOTSOCEAN = '0x199753a8684e2291be0747dfd707392f2ff1f4143ec94868f50dd54912a17fdf'
+
+const aptosConfig = new AptosConfig({ fullnode: RPC_URL });
+const aptos = new Aptos(aptosConfig);
 type Coin = { coin: { value: string } };
 
 export default function ModernWeb3Chat() {
   const { autoConnect, setAutoConnect } = useAutoConnect();
-  const { connect, disconnect, connected, wallet, account, network } = useWallet();
+  const { connect, disconnect, connected, wallet, account, network, signAndSubmitTransaction } = useWallet();
 
   const [isWalletConnected, setIsWalletConnected] = useState(false)
   const [balance, setBalance] = useState(0)
+  const [depositValue, setDepositValue] = useState('')
   const [chatId, setChatId] = useState()
   const [messages, setMessages] = useState([
     { id: 1, content: "Hello! How can I assist you today?", sender: "bot" },
@@ -49,16 +55,6 @@ export default function ModernWeb3Chat() {
   useEffect(() => {
     setAutoConnect(true);
   }, []);
-
-  let aptos: Aptos;
-  useEffect(() => {
-    if (network) {
-      (async () => {
-        const aptosConfig = new AptosConfig({ fullnode: network!.url! });
-        aptos = new Aptos(aptosConfig);
-      })();
-    }
-  }, [network])
 
   useEffect(() => {
     const getBalance = async () => {
@@ -149,6 +145,43 @@ export default function ModernWeb3Chat() {
     }
   }
 
+  async function deposit() {
+    const depositAmount = Number(depositValue) * (10 ^ 8);
+    const transaction: InputTransactionData = {
+      data: {
+        function: `${BOTSOCEAN}::payment::deposit`,
+        functionArguments: [depositAmount]
+      }
+    }
+    try {
+      // sign and submit transaction to chain
+      const response = await signAndSubmitTransaction(transaction);
+      // wait for transaction
+      console.log(`Success! View your transaction at https://explorer.movementlabs.xyz/txn/${response.hash}`)
+      await aptos.waitForTransaction({ transactionHash: response.hash });
+    } catch (error: any) {
+      console.log("Error:", error)
+    }
+  }
+
+  async function requestWithdrawal() {
+    const transaction: InputTransactionData = {
+      data: {
+        function: `${BOTSOCEAN}::payment::request_withdrawal`,
+        functionArguments: []
+      }
+    }
+    try {
+      // sign and submit transaction to chain
+      const response = await signAndSubmitTransaction(transaction);
+      // wait for transaction
+      console.log(`Success! View your transaction at https://explorer.movementlabs.xyz/txn/${response.hash}`)
+      await aptos.waitForTransaction({ transactionHash: response.hash });
+    } catch (error: any) {
+      console.log("Error:", error)
+    }
+  }
+
   useEffect(() => {
     const scrollArea = document.querySelector('.scroll-area')
     if (scrollArea) {
@@ -219,23 +252,39 @@ export default function ModernWeb3Chat() {
                         </Select>
                       </div>
                       <div>
-                        <h1 className="text-m font-semibold mb-2">Wallet balance</h1>
-                        <div className="mb-4">
-                          <p className="text-sm font-medium">{balance} MOVE</p>
+                        <h1 className="text-m font-semibold mb-2">Wallet</h1>
+                        <div className="space-y-2">
+                          <div className="mb-4">
+                            <p className="text-sm font-medium">Balance: {balance} MOVE</p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Input
+                              type="number"
+                              placeholder="Enter deposit amount"
+                              className="flex-1"
+                              value={depositValue}
+                              onChange={(e) => {
+                                setDepositValue(e.target.value)
+                              }}
+                            />
+                            <Button variant="outline" onClick={() => deposit()} className="flex-1">
+                              Deposit
+                            </Button>
+                          </div>
                         </div>
                       </div>
                       <div>
-                        <h1 className="text-m font-semibold mb-2">Botsocean balance</h1>
-                        <div className="mb-4">
-                          <p className="text-sm font-medium">1 ETH</p>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button variant="outline" onClick={() => alert("Deposit functionality")} className="flex-1">
-                            Deposit
-                          </Button>
-                          <Button variant="outline" onClick={() => alert("Withdraw functionality")} className="flex-1">
-                            Withdraw
-                          </Button>
+                        <h1 className="text-m font-semibold mb-2">Botsocean</h1>
+                        <div className="space-y-2">
+                          <div className="mb-4">
+                            <p className="text-sm font-medium">Balance: 1 MOVE</p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button variant="outline" onClick={() => requestWithdrawal()} className="flex-1">
+                              Request Withdrawal
+                            </Button>
+                            <div className="flex-1"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
