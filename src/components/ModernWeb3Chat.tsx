@@ -32,6 +32,8 @@ const models = [
 
 const RPC_URL = 'https://testnet.movementnetwork.xyz/v1'
 const BOTSOCEAN = '0x199753a8684e2291be0747dfd707392f2ff1f4143ec94868f50dd54912a17fdf'
+const BOTSOCEAN_API = 'http://45.77.242.139:4431'
+const BOTSOCEAN_PAYMENT_API = 'http://45.77.242.139:4432'
 
 const aptosConfig = new AptosConfig({ fullnode: RPC_URL });
 const aptos = new Aptos(aptosConfig);
@@ -39,9 +41,10 @@ type Coin = { coin: { value: string } };
 
 export default function ModernWeb3Chat() {
   const { autoConnect, setAutoConnect } = useAutoConnect();
-  const { connect, disconnect, connected, wallet, account, network, signAndSubmitTransaction } = useWallet();
+  const { connect, disconnect, connected, wallet, account, network, signAndSubmitTransaction, signMessage, signMessageAndVerify } = useWallet();
 
   const [isWalletConnected, setIsWalletConnected] = useState(false)
+  const [jwtToken, setJwtToken] = useState(undefined);
   const [balance, setBalance] = useState(0)
   const [depositValue, setDepositValue] = useState('')
   const [chatId, setChatId] = useState()
@@ -69,6 +72,42 @@ export default function ModernWeb3Chat() {
         } catch (error) {
           console.error('Error fetching balance:', error);
         }
+      }
+    }
+
+    getBalance();
+  }, [account])
+
+  useEffect(() => {
+    const getBalance = async () => {
+      console.log('Token', jwtToken);
+      if (account?.address && !jwtToken) {
+        const signPayload = {
+          message: "Sign this message to log in", // The message to be signed and displayed to the user
+          nonce: "1", // A nonce the dapp should generate
+        }
+        const signres = await signMessage(signPayload)
+        console.log(account.publicKey, account.address, signres.signature);
+
+        const response = await fetch(`${BOTSOCEAN_API}/user/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            pubkey: account!.publicKey,
+            wallet: account!.address,
+            signature: signres.signature.toString(),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to sign in');
+        }
+
+        const data = await response.json();
+        setJwtToken(data.token);
+        console.log('Token', data.token);
       }
     }
 
@@ -159,7 +198,7 @@ export default function ModernWeb3Chat() {
       // wait for transaction
       console.log(`Success! View your transaction at https://explorer.movementlabs.xyz/txn/${response.hash}`)
       await aptos.waitForTransaction({ transactionHash: response.hash });
-      const postDepositResponse = await fetch('http://45.77.242.139:4432/payment/deposit', {
+      const postDepositResponse = await fetch(`${BOTSOCEAN_PAYMENT_API}/payment/deposit`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
