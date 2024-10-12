@@ -214,7 +214,7 @@ export default function ModernWeb3Chat() {
       setInputMessage("");
 
       const newChatData = {
-        user_id: "111111",
+        user_id: account?.address,
         chat_id: chatId,
         model: selectedModel,
         prompt: inputMessage,
