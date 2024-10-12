@@ -36,6 +36,8 @@ import { WalletSelector as ShadcnWalletSelector } from "@/components/WalletSelec
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 import { isAptosNetwork } from "@aptos-labs/wallet-adapter-core";
 import { chatService } from "@/service/ChatService";
+import { getStorageData, setStorageData } from "@/helper/utils";
+import { storageKey } from "@/contants/DefaultValue";
 
 const models = ["qwen2:0.5b"];
 
@@ -157,6 +159,11 @@ export default function ModernWeb3Chat() {
   }
 
   useEffect(() => {
+    let token = getStorageData(storageKey.authToken)
+    if (token) {
+      return
+    }
+
     const getJwtToken = async () => {
       console.log('Token', jwtToken);
       if (account?.address && !jwtToken) {
@@ -186,6 +193,7 @@ export default function ModernWeb3Chat() {
         const data = await response.json();
         setJwtToken(data.token);
         console.log('Token', data.token);
+        setStorageData(storageKey.authToken, data.token);
       }
     }
 
