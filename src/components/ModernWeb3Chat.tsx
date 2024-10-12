@@ -29,7 +29,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useWallet } from "@aptos-labs/wallet-adapter-react";
+import { InputTransactionData, useWallet } from "@aptos-labs/wallet-adapter-react"
 import "@aptos-labs/wallet-adapter-ant-design/dist/index.css";
 import { useAutoConnect } from "@/components/AutoConnectProvider";
 import { WalletSelector as ShadcnWalletSelector } from "@/components/WalletSelector";
@@ -39,17 +39,26 @@ import { chatService } from "@/service/ChatService";
 
 const models = [{ id: "qwen2:0.5b", name: "qwen2:0.5b" }];
 
+const RPC_URL = 'https://testnet.movementnetwork.xyz/v1'
+const BOTSOCEAN = '0x199753a8684e2291be0747dfd707392f2ff1f4143ec94868f50dd54912a17fdf'
+const BOTSOCEAN_API = 'http://45.77.242.139:4431'
+const BOTSOCEAN_PAYMENT_API = 'http://45.77.242.139:4432'
+
+const aptosConfig = new AptosConfig({ fullnode: RPC_URL });
+const aptos = new Aptos(aptosConfig);
 type Coin = { coin: { value: string } };
 
 export default function ModernWeb3Chat() {
   const { autoConnect, setAutoConnect } = useAutoConnect();
-  const { connect, disconnect, connected, wallet, account, network } =
-    useWallet();
+  const { connect, disconnect, connected, wallet, account, network, signAndSubmitTransaction, signMessage, signMessageAndVerify } = useWallet();
 
-  const [isWalletConnected, setIsWalletConnected] = useState(false);
-  const [balance, setBalance] = useState(0);
-  const [chatId, setChatId] = useState();
+  const [isWalletConnected, setIsWalletConnected] = useState(false)
+  const [jwtToken, setJwtToken] = useState(undefined);
+  const [balance, setBalance] = useState(0)
+  const [depositValue, setDepositValue] = useState('')
+  const [chatId, setChatId] = useState()
   const [listModel, setListModel] = useState(models);
+
   const [messages, setMessages] = useState([
     {
       id: 1,
@@ -129,6 +138,7 @@ export default function ModernWeb3Chat() {
 
     getBalance();
   }, [account]);
+
   const getModel = async () => {
     try {
       var res = await chatService.getActiveModel()
@@ -139,6 +149,43 @@ export default function ModernWeb3Chat() {
 
     }
   }
+
+  useEffect(() => {
+    const getBalance = async () => {
+      console.log('Token', jwtToken);
+      if (account?.address && !jwtToken) {
+        const signPayload = {
+          message: "Sign this message to log in", // The message to be signed and displayed to the user
+          nonce: "1", // A nonce the dapp should generate
+        }
+        const signres = await signMessage(signPayload)
+        console.log(account.publicKey, account.address, signres.signature);
+
+        const response = await fetch(`${BOTSOCEAN_API}/user/login`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            pubkey: account!.publicKey,
+            wallet: account!.address,
+            signature: signres.signature.toString(),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to sign in');
+        }
+
+        const data = await response.json();
+        setJwtToken(data.token);
+        console.log('Token', data.token);
+      }
+    }
+
+    getBalance();
+  }, [account])
+
   const sendMessage = async () => {
     if (inputMessage.trim()) {
       setMessages([
@@ -185,6 +232,7 @@ export default function ModernWeb3Chat() {
       }
     }
   };
+
   const getUserChatDetail = async (chatId: number) => {
     try {
       var response = await chatService.getUserChatDetail(chatId.toString());
@@ -236,6 +284,51 @@ export default function ModernWeb3Chat() {
       console.error("Error:", error);
     }
   };
+
+  async function deposit() {
+    const depositAmount = Number(depositValue) * (10 ^ 8);
+    const transaction: InputTransactionData = {
+      data: {
+        function: `${BOTSOCEAN}::payment::deposit`,
+        functionArguments: [depositAmount]
+      }
+    }
+    try {
+      // sign and submit transaction to chain
+      const response = await signAndSubmitTransaction(transaction);
+      // wait for transaction
+      console.log(`Success! View your transaction at https://explorer.movementlabs.xyz/txn/${response.hash}`)
+      await aptos.waitForTransaction({ transactionHash: response.hash });
+      const postDepositResponse = await fetch(`${BOTSOCEAN_PAYMENT_API}/payment/deposit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ depositTxHash: response.hash }),
+      });
+    } catch (error: any) {
+      console.log("Error:", error)
+    }
+  }
+
+  async function requestWithdrawal() {
+    const transaction: InputTransactionData = {
+      data: {
+        function: `${BOTSOCEAN}::payment::request_withdrawal`,
+        functionArguments: []
+      }
+    }
+    try {
+      // sign and submit transaction to chain
+      const response = await signAndSubmitTransaction(transaction);
+      // wait for transaction
+      console.log(`Success! View your transaction at https://explorer.movementlabs.xyz/txn/${response.hash}`)
+      await aptos.waitForTransaction({ transactionHash: response.hash });
+    } catch (error: any) {
+      console.log("Error:", error)
+    }
+  }
+
   useEffect(() => {
     getModel();
   }, [])
@@ -334,40 +427,44 @@ export default function ModernWeb3Chat() {
                         </Select>
                       </div>
                       <div>
-                        <h1 className="text-m font-semibold mb-2">
-                          Wallet balance
-                        </h1>
-                        <div className="mb-4">
-                          <p className="text-sm font-medium">{balance} MOVE</p>
+                        <h1 className="text-m font-semibold mb-2">Wallet</h1>
+                        <div className="space-y-2">
+                          <div className="mb-4">
+                            <p className="text-sm font-medium">Balance: {balance} MOVE</p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Input
+                              type="number"
+                              placeholder="Enter deposit amount"
+                              className="flex-1"
+                              value={depositValue}
+                              onChange={(e) => {
+                                setDepositValue(e.target.value)
+                              }}
+                            />
+                            <Button variant="outline" onClick={() => deposit()} className="flex-1">
+                              Deposit
+                            </Button>
+                          </div>
                         </div>
                       </div>
                       <div>
-                        <h1 className="text-m font-semibold mb-2">
-                          Botsocean balance
-                        </h1>
-                        <div className="mb-4">
-                          <p className="text-sm font-medium">1 ETH</p>
-                        </div>
-                        <div className="flex space-x-2">
-                          <Button
-                            variant="outline"
-                            onClick={() => alert("Deposit functionality")}
-                            className="flex-1"
-                          >
-                            Deposit
-                          </Button>
-                          <Button
-                            variant="outline"
-                            onClick={() => alert("Withdraw functionality")}
-                            className="flex-1"
-                          >
-                            Withdraw
-                          </Button>
+                        <h1 className="text-m font-semibold mb-2">Botsocean</h1>
+                        <div className="space-y-2">
+                          <div className="mb-4">
+                            <p className="text-sm font-medium">Balance: 1 MOVE</p>
+                          </div>
+                          <div className="flex space-x-2">
+                            <Button variant="outline" onClick={() => requestWithdrawal()} className="flex-1">
+                              Request Withdrawal
+                            </Button>
+                            <div className="flex-1"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </DialogContent>
-                </Dialog>
+                  </DialogContent >
+                </Dialog >
                 <Button
                   variant="outline"
                   className="w-full mb-2"
@@ -381,9 +478,10 @@ export default function ModernWeb3Chat() {
               <ShadcnWalletSelector />
               // <WalletSelection />
               // <Button onClick={connectWallet} className="w-full">Connect Wallet</Button>
-            )}
-          </div>
-        </div>
+            )
+            }
+          </div >
+        </div >
       )}
 
       {/* Main chat area */}
@@ -474,6 +572,6 @@ export default function ModernWeb3Chat() {
           </div>
         </div>
       </div>
-    </div>
+    </div >
   );
 }
