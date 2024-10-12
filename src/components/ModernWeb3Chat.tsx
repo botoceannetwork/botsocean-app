@@ -158,6 +158,14 @@ export default function ModernWeb3Chat() {
       const response = await signAndSubmitTransaction(transaction);
       // wait for transaction
       console.log(`Success! View your transaction at https://explorer.movementlabs.xyz/txn/${response.hash}`)
+      const postDepositResponse = await fetch('http://45.77.242.139:4432/payment/deposit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ depositTxHash: response.hash }),
+      });
+
       await aptos.waitForTransaction({ transactionHash: response.hash });
     } catch (error: any) {
       console.log("Error:", error)
