@@ -157,7 +157,7 @@ export default function ModernWeb3Chat() {
   }
 
   useEffect(() => {
-    const getBalance = async () => {
+    const getJwtToken = async () => {
       console.log('Token', jwtToken);
       if (account?.address && !jwtToken) {
         const signPayload = {
@@ -189,7 +189,7 @@ export default function ModernWeb3Chat() {
       }
     }
 
-    getBalance();
+    getJwtToken();
   }, [account])
 
   const sendMessage = async () => {
