@@ -37,7 +37,7 @@ import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 import { isAptosNetwork } from "@aptos-labs/wallet-adapter-core";
 import { chatService } from "@/service/ChatService";
 
-const models = [{ id: "qwen2:0.5b", name: "qwen2:0.5b" }];
+const models = ["qwen2:0.5b"];
 
 const RPC_URL = 'https://testnet.movementnetwork.xyz/v1'
 const BOTSOCEAN = '0x199753a8684e2291be0747dfd707392f2ff1f4143ec94868f50dd54912a17fdf'
@@ -108,7 +108,7 @@ export default function ModernWeb3Chat() {
 
   useEffect(() => {
     if (listModel?.length > 0) {
-      setSelectedModel(listModel[0].name)
+      setSelectedModel(listModel[0])
     }
   }, [listModel])
 
@@ -396,7 +396,7 @@ export default function ModernWeb3Chat() {
                   <p className="text-sm">
                     <span className="font-semibold text-gray-600">Model:</span>{" "}
                     <span className="font-bold text-gray-800">
-                      {listModel.find((m) => m.id === selectedModel)?.name}
+                      {listModel.find((m) => m === selectedModel)}
                     </span>
                   </p>
                 </div>
@@ -425,8 +425,8 @@ export default function ModernWeb3Chat() {
                           </SelectTrigger>
                           <SelectContent>
                             {listModel && listModel.map((model) => (
-                              <SelectItem key={model.id} value={model.id}>
-                                {model.name}
+                              <SelectItem key={model} value={model}>
+                                {model}
                               </SelectItem>
                             ))}
                           </SelectContent>
@@ -510,8 +510,8 @@ export default function ModernWeb3Chat() {
               </SelectTrigger>
               <SelectContent>
                 {listModel && listModel.map((model) => (
-                  <SelectItem key={model.id} value={model.id}>
-                    {model.name}
+                  <SelectItem key={model} value={model}>
+                    {model}
                   </SelectItem>
                 ))}
               </SelectContent>
