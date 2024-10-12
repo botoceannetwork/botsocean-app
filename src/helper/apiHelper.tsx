@@ -1,9 +1,12 @@
 /* eslint-disable no-console */
 import axios from "axios";
 import { storageKey } from "@/contants/DefaultValue";
-import { useToast } from "@/components/ui/use-toast";
 import { getStorageData } from "./utils";
-export const baseApi = "http://45.77.242.139:3000";
+
+export const BOTSOCEAN_API = 'http://45.77.242.139:4431'
+export const BOTSOCEAN_PAYMENT_API = 'http://45.77.242.139:4432'
+export const baseApi = BOTSOCEAN_API;
+
 const fetch = axios.create({
   baseURL: baseApi,
   timeout: 8000,

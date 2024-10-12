@@ -41,8 +41,8 @@ const models = [{ id: "qwen2:0.5b", name: "qwen2:0.5b" }];
 
 const RPC_URL = 'https://testnet.movementnetwork.xyz/v1'
 const BOTSOCEAN = '0x199753a8684e2291be0747dfd707392f2ff1f4143ec94868f50dd54912a17fdf'
-const BOTSOCEAN_API = 'http://45.77.242.139:4431'
-const BOTSOCEAN_PAYMENT_API = 'http://45.77.242.139:4432'
+export const BOTSOCEAN_API = 'http://45.77.242.139:4431'
+export const BOTSOCEAN_PAYMENT_API = 'http://45.77.242.139:4432'
 
 const aptosConfig = new AptosConfig({ fullnode: RPC_URL });
 const aptos = new Aptos(aptosConfig);
@@ -103,8 +103,14 @@ export default function ModernWeb3Chat() {
   ]);
   const [currentMessage, setcurrentMessage] = useState(1);
   const [inputMessage, setInputMessage] = useState("");
-  const [selectedModel, setSelectedModel] = useState(listModel[0].name);
+  const [selectedModel, setSelectedModel] = useState<string>();
   const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+
+  useEffect(() => {
+    if (listModel?.length > 0) {
+      setSelectedModel(listModel[0].name)
+    }
+  }, [listModel])
 
   useEffect(() => {
     setAutoConnect(true);
@@ -143,7 +149,7 @@ export default function ModernWeb3Chat() {
     try {
       var res = await chatService.getActiveModel()
       if (res.status === 200 || res.status === 201) {
-        setListModel(res.data);
+        setListModel(res.data.models);
       }
     } catch (error) {
 
@@ -418,7 +424,7 @@ export default function ModernWeb3Chat() {
                             <SelectValue placeholder="Select a model" />
                           </SelectTrigger>
                           <SelectContent>
-                            {listModel.map((model) => (
+                            {listModel && listModel.map((model) => (
                               <SelectItem key={model.id} value={model.id}>
                                 {model.name}
                               </SelectItem>
@@ -503,7 +509,7 @@ export default function ModernWeb3Chat() {
                 <SelectValue placeholder="Select a model" />
               </SelectTrigger>
               <SelectContent>
-                {listModel.map((model) => (
+                {listModel && listModel.map((model) => (
                   <SelectItem key={model.id} value={model.id}>
                     {model.name}
                   </SelectItem>

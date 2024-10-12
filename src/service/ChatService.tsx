@@ -12,7 +12,7 @@ export const chatService = {
     return fetchWithAuth.post("/users/auth", { user_id })
   },
   getActiveModel: () => {
-    return fetchNoAuth.get("/provider/models")
+    return fetchNoAuth.get("/provider")
   },
   getUserChathHistory: (userId: string) => {
     return fetchWithAuth.get("/prompt/chat-history")
