@@ -36,7 +36,7 @@ import { WalletSelector as ShadcnWalletSelector } from "@/components/WalletSelec
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk";
 import { isAptosNetwork } from "@aptos-labs/wallet-adapter-core";
 import { chatService } from "@/service/ChatService";
-import { getStorageData, setStorageData } from "@/helper/utils";
+import { getStorageData, removeStorageData, setStorageData } from "@/helper/utils";
 import { storageKey } from "@/contants/DefaultValue";
 
 const models = ["qwen2:0.5b"];
@@ -116,6 +116,7 @@ export default function ModernWeb3Chat() {
 
   useEffect(() => {
     setAutoConnect(true);
+    getListChatHistory(account?.address!);
   }, []);
 
   let aptos: Aptos;
@@ -267,8 +268,8 @@ export default function ModernWeb3Chat() {
       console.log(error)
     }
   };
-  const createNewChat = async () => {
 
+  const createNewChat = async () => {
     setMessages([
       ...messages,
       {
@@ -343,11 +344,16 @@ export default function ModernWeb3Chat() {
     }
   }
 
+  const logout = async () => {
+    disconnect();
+    removeStorageData(storageKey.authToken);
+  }
+
   useEffect(() => {
     getModel();
   }, [])
-  useEffect(() => {
 
+  useEffect(() => {
     const scrollArea = document.querySelector(".scroll-area");
     if (scrollArea) {
       scrollArea.scrollTop = scrollArea.scrollHeight;
@@ -482,7 +488,7 @@ export default function ModernWeb3Chat() {
                 <Button
                   variant="outline"
                   className="w-full mb-2"
-                  onClick={disconnect}
+                  onClick={logout}
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
