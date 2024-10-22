@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { ChevronDown, Info, Settings } from "lucide-react"
+import Link from 'next/link'
 import { useState } from 'react';
 import ConnectPeraWallet from "@/components/ConnectPeraWallet";
 import { PeraWalletConnect } from "@perawallet/connect";
@@ -145,22 +146,24 @@ export default function Home() {
             </div>
             <div className="space-y-4">
               {[...Array(5)].map((_, index) => (
-                <Card key={index}>
-                  <CardContent className="p-4 flex items-center">
-                    <div className="w-12 h-12 bg-gray-200 rounded-full mr-4"></div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold">Agent Name</h3>
-                      <p className="text-sm text-gray-500">agent1qw3e4r...</p>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">Hosted</span>
-                      <span className="px-2 py-1 bg-green-100 text-green-600 text-xs rounded-full">Active</span>
-                    </div>
-                    <div className="ml-4 text-right">
-                      <span className="text-2xl font-semibold">10</span>
-                      <p className="text-xs text-gray-500">Interactions</p>
-                    </div>
-                  </CardContent>
+                <Card className="hover:shadow-md transition-shadow duration-200">
+                  <Link href={`/agent/${index + 1}`} key={index}>
+                    <CardContent className="p-4 flex items-center">
+                      <div className="w-12 h-12 bg-gray-200 rounded-full mr-4"></div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold">Agent Name</h3>
+                        <p className="text-sm text-gray-500">agent1qw3e4r...</p>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">Hosted</span>
+                        <span className="px-2 py-1 bg-green-100 text-green-600 text-xs rounded-full">Active</span>
+                      </div>
+                      <div className="ml-4 text-right">
+                        <span className="text-2xl font-semibold">10</span>
+                        <p className="text-xs text-gray-500">Interactions</p>
+                      </div>
+                    </CardContent>
+                  </Link>
                 </Card>
               ))}
             </div>
