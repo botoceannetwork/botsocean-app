@@ -43,6 +43,16 @@ export default function Home() {
     console.log('Disconnected');
   };
 
+  function shortenAlgorandAddress(address: any, chars = 3) {
+    // Ensure the address is valid and the length is sufficient to shorten
+    if (!address || address.length <= chars * 2) {
+      return address;
+    }
+
+    // Shorten the address by keeping the first and last 'chars' characters
+    return `${address.slice(0, chars)}...${address.slice(-chars)}`;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm">
@@ -59,8 +69,8 @@ export default function Home() {
             )}
             {walletAddress ? (
               <div>
-                <p>Connected Account: {walletAddress}</p>
-                <Button onClick={disconnectWallet} variant="default">Disconnect Wallet</Button>
+                <Button>{shortenAlgorandAddress(walletAddress)}</Button>
+                <Button onClick={disconnectWallet} variant="default">Disconnect</Button>
               </div>
             ) : (
               <Button onClick={connectWallet} variant="default">Connect Pera Wallet</Button>
