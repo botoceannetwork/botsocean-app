@@ -146,8 +146,8 @@ export default function Home() {
             </div>
             <div className="space-y-4">
               {[...Array(5)].map((_, index) => (
-                <Card className="hover:shadow-md transition-shadow duration-200">
-                  <Link href={`/agent/${index + 1}`} key={index}>
+                <Card key={index} className="hover:shadow-md transition-shadow duration-200">
+                  <Link href={`/bundle/${index + 1}`}>
                     <CardContent className="p-4 flex items-center">
                       <div className="w-12 h-12 bg-gray-200 rounded-full mr-4"></div>
                       <div className="flex-1">
