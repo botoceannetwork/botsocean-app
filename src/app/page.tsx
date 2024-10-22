@@ -1,3 +1,5 @@
+"use client";
+
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -9,9 +11,38 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ChevronDown, Info } from "lucide-react"
+import { ChevronDown, Info, Settings } from "lucide-react"
+import { useState } from 'react';
+import ConnectPeraWallet from "@/components/ConnectPeraWallet";
+import { PeraWalletConnect } from "@perawallet/connect";
 
 export default function Home() {
+  const [showSettings, setShowSettings] = useState(false);
+  const [walletAddress, setWalletAddress] = useState<any>(null);
+  const peraWallet = new PeraWalletConnect();
+
+  const connectWallet = async () => {
+    try {
+      const accounts = await peraWallet.connect();
+      const address = accounts[0];
+      setWalletAddress(address);
+      console.log('Connected account:', address);
+
+      // Listen for wallet disconnection
+      peraWallet.reconnectSession();
+    } catch (error) {
+      if ((error as any)?.data?.type !== 'CONNECT_MODAL_CLOSED') {
+        console.error('Error connecting wallet:', error);
+      }
+    }
+  };
+
+  const disconnectWallet = async () => {
+    peraWallet.disconnect();
+    setWalletAddress(null);
+    console.log('Disconnected');
+  };
+
   return (
     <div className="min-h-screen bg-gray-100">
       <header className="bg-white shadow-sm">
@@ -20,7 +51,21 @@ export default function Home() {
             <span className="text-2xl font-bold text-blue-600">Botocean</span>
             <span className="ml-2 px-2 py-1 text-xs font-semibold text-blue-600 bg-blue-100 rounded-full">DEMO</span>
           </div>
-          <Button variant="default">Sign in</Button>
+          <div className="flex items-center space-x-2">
+            {showSettings && (
+              <Button variant="ghost" size="icon">
+                <Settings className="h-4 w-4" />
+              </Button>
+            )}
+            {walletAddress ? (
+              <div>
+                <p>Connected Account: {walletAddress}</p>
+                <Button onClick={disconnectWallet} variant="default">Disconnect Wallet</Button>
+              </div>
+            ) : (
+              <Button onClick={connectWallet} variant="default">Connect Pera Wallet</Button>
+            )}
+          </div>
         </div>
       </header>
 
